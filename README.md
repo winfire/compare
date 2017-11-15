@@ -1,7 +1,7 @@
-
-    <p>
-        1、主要比较点有 :<br/>（1）中文分词，页面标红的词，一般为分词结果
-    </p>
+<p>
+    1、主要比较点有 :<br/>（1）中文分词，页面标红的词，一般为分词结果
+</p>
+<article>
     <p>
         （2）排序结果，或者简单理解就是搜索的准确性，本实现对准确性的比较依赖用户最终的选择反馈；
     </p>
@@ -45,7 +45,7 @@
         返回：成功 指定url的重定向url 失败 false
     </p>
     <p>
-        （2）curlGetHtml($url，$timeout = 25)
+        （2）curlGetHtml($url，$timeout = 25)<br/>
     </p>
     <p>
         功能：以Get方式获取指定url的页面内容； <br/>
@@ -54,11 +54,10 @@
         参数：url 请求的url ,timeout 超时设置
     </p>
     <p>
-        
-	返回：成功 html代码 失败 false <br/>
+        &nbsp;返回：成功 html代码 失败 false <br/>
     </p>
     <p>
-        （3）PickupFromGoogle($filePath)
+        （3）PickupFromGoogle($filePath) <br/>
     </p>
     <p>
         功能：从Google的搜索结果文件里面获取分词、链接信息 <br/>
@@ -70,7 +69,7 @@
         返回：分词、链接信息 <br/>
     </p>
     <p>
-        （4）PickupFromBaidu($keyWord)
+        （4）PickupFromBaidu($keyWord) <br/>
     </p>
     <p>
         功能：百度实时搜索关键词，并从返回的html代码里面获取分词、链接信息 <br/>
@@ -81,3 +80,4 @@
     <p>
         返回：分词、链接信息
     </p>
+</article>
