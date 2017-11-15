@@ -1,10 +1,4 @@
-<p>
-    <br/>
-</p>
-<p>
-    <br/>
-</p>
-<article>
+
     <p>
         1、主要比较点有 :<br/>（1）中文分词，页面标红的词，一般为分词结果
     </p>
@@ -52,7 +46,6 @@
     </p>
     <p>
         （2）curlGetHtml($url，$timeout = 25)
- &nbsp; &nbsp; <br/>
     </p>
     <p>
         功能：以Get方式获取指定url的页面内容； <br/>
@@ -66,7 +59,6 @@
     </p>
     <p>
         （3）PickupFromGoogle($filePath)
- &nbsp;&nbsp; <br/>
     </p>
     <p>
         功能：从Google的搜索结果文件里面获取分词、链接信息 <br/>
@@ -79,7 +71,6 @@
     </p>
     <p>
         （4）PickupFromBaidu($keyWord)
- &nbsp; &nbsp; <br/>
     </p>
     <p>
         功能：百度实时搜索关键词，并从返回的html代码里面获取分词、链接信息 <br/>
@@ -90,13 +81,3 @@
     <p>
         返回：分词、链接信息
     </p>
-</article>
-<p>
-    <br/>
-</p>
-<p>
-    <br/>
-</p>
-<p>
-    <br/>
-</p>
