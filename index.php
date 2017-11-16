@@ -4,6 +4,7 @@
     <head>     
         <title>搜索比对</title>    
         <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+        <script src="jquery/jquery-3.1.1.min.js"></script>
     </head>
     <body>      
         <div class="container-fluid">             
@@ -16,28 +17,34 @@
              * @return string
              * */
             function GetRedirectUrl($url, $referer = '', $timeout = 10) {
-                return FALSE;
+                //return FALSE;
                 $redirect_url = false;
                 $ch = curl_init();
-                curl_setopt($ch, CURLOPT_PROXY, "http://dev-proxy.oa.com:8080");  //配置代理 
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); //跳过ssl检查项。
+                //配置代理 
+                curl_setopt($ch, CURLOPT_PROXY, "http://dev-proxy.oa.com:8080");
+                //跳过ssl检查项。
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($ch, CURLOPT_URL, $url);
                 curl_setopt($ch, CURLOPT_HEADER, TRUE);
-                curl_setopt($ch, CURLOPT_NOBODY, TRUE); //不返回请求体内容
-                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE); //允许请求的链接跳转
+                //不返回请求体内容
+                curl_setopt($ch, CURLOPT_NOBODY, TRUE);
+                //允许请求的链接跳转
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
                 curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                    'Accept: */\*',
-                    'User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)',
-                    'Connection: Keep-Alive'));
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36');
                 if ($referer) {
                     curl_setopt($ch, CURLOPT_REFERER, $referer); //构造来路
                 }
                 $content = curl_exec($ch);
-                if (!curl_errno($ch)) {
-                    $redirect_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL); //获取最终请求的url地址
+                if (curl_errno($ch)) {
+                    print_r("CURL Error:" . curl_error($ch));
+                    curl_close($ch);
+                    return FALSE;
                 }
+                //获取最终请求的url地址
+                $redirect_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+                curl_close($ch);
                 return $redirect_url;
             }
 
@@ -46,11 +53,11 @@
              * @param type $url
              * @return 成功 html 失败 false 
              */
-            function curlGetHtml($url,$timeout = 25) {
+            function curlGetHtml($url, $timeout = 25) {
 
                 $ch = curl_init();
                 //配置代理
-                curl_setopt($ch, CURLOPT_PROXY, "http://dev-proxy.oa.com:8080");
+                //curl_setopt($ch, CURLOPT_PROXY, "http://dev-proxy.oa.com:8080");
                 //跳过ssl检查项。
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
@@ -144,26 +151,68 @@
                 return $data;
             }
 
+            /**
+             * PickupFromSoso() 
+             * 从Soso搜索结果文件中提取数据
+             * @param string $keyWord 用户输入关键词 
+             * @return Array 超链接 分词结果
+             * */
+            function PickupFromSoso($keyWord) {
+                $data = array(
+                    'keyword' => array(),
+                    'href' => array(),
+                    'text' => array(),
+                );
+                $html = curlGetHtml("https://www.sogou.com/web?ie=utf8&query=" . $keyWord);
+                if ($html == FALSE) {
+                    echo "Soso搜索失败，无法比较";
+                    exit();
+                }
+                phpQuery::newDocument($html);
+                //正则表达式，为提取<em>元素
+                $paB = '%<em>(.*?)</em>%si';
+                $objLinks = pq('.results h3 a');
+                foreach ($objLinks as $a) {
+                    //真正的搜索结果链接需是百度的重定向结果
+                    $relLink = GetRedirectUrl($a->getAttribute('href'));
+                    if ($relLink == FALSE) {
+                        $relLink = $a->getAttribute('href');
+                    }
+                    $data['href'][] = $relLink;
+                    $data['text'][] = $a->nodeValue;
+                    //提取链接文本中<em>元素内容是标红内容，是分词关键词
+                    preg_match($paB, pq($a)->html(), $match);
+                    if (count($match) > 0) {
+                        $data['keyword'][] = $match[1];
+                    }
+                }
+                $data['keyword'] = array_unique($data['keyword']);
+                return $data;
+            }
+
             set_time_limit(120);
             //引入phpQuery.php
             require 'phpQuery\phpQuery.php';
+            $dataSoso = array('keyword' => array(), 'href' => array(), 'text' => array());
+            $dataBaidu = array('keyword' => array(), 'href' => array(), 'text' => array());
 
-            $fileGoogle = 'files\google.htm';
-            //$fileBaidu = 'files\baidu.htm';      
-            $dataGoogle = PickupFromGoogle($fileGoogle);
-            $dataBaidu = PickupFromBaidu("吃鸡荒野求生");
+            $keyword = isset($_GET['kd']) ? $_GET['kd'] : '';
+            if ($keyword != "") {
+                $dataSoso = PickupFromSoso($keyword);
+                $dataBaidu = PickupFromBaidu($keyword);
+            }
             ?>
             <div class="row" style="margin-top: 20px"> 
-                <div class="col-md-6 col-md-offset-2">
-                    <form>
+                <form >
+                    <div class="col-md-6 col-md-offset-2">
                         <div class="form-group">
-                            <input type="text" class="form-control" id="inputText" placeholder="请输入搜索关键字" value="吃鸡荒野求生" readonly="true">
+                            <input type="text" class="form-control" id="keywowd" placeholder="请输入搜索关键字" value="<?= $keyword ?>">
                         </div>
-                    </form>
-                </div>
-                <div class="col-md-2">
-                    <button type="button"  class="btn btn-primary">开始搜索</button>
-                </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button"  id="searchBtn" class="btn btn-primary">开始搜索</button>
+                    </div>
+                </form>
             </div>
             <div class="panel panel-default">
                 <div class="panel-heading"> 
@@ -180,7 +229,7 @@
                         </div> 
                         <div class="col-md-6">
                             <?php
-                            foreach ($dataGoogle["keyword"] as $key) {
+                            foreach ($dataSoso["keyword"] as $key) {
                                 echo $key . "</br>";
                             }
                             ?>
@@ -204,9 +253,9 @@
                         </div> 
                         <div class="col-md-6">
                             <?php
-                            $linkCount = count($dataGoogle["href"]);
+                            $linkCount = count($dataSoso["href"]);
                             for ($i = 0; $i < $linkCount; $i++) {
-                                echo "<a href=\"javascript:void(0)\" onclick=\"CheckLink('" . $dataGoogle["href"][$i] . "','google'," . $i . ")\">" . $dataGoogle["text"][$i] . "</a><br></br>";
+                                echo "<a href=\"javascript:void(0)\" onclick=\"CheckLink('" . $dataSoso["href"][$i] . "','soso'," . $i . ")\">" . $dataSoso["text"][$i] . "</a><br></br>";
                             }
                             ?>
                         </div> 
@@ -215,8 +264,42 @@
             </div>
         </div> 
         <script>
-            var dataGoogle =<?= json_encode($dataGoogle, JSON_UNESCAPED_UNICODE) ?>;
+            var dataSoso =<?= json_encode($dataSoso, JSON_UNESCAPED_UNICODE) ?>;
             var dataBaidu =<?= json_encode($dataBaidu, JSON_UNESCAPED_UNICODE) ?>;
+
+
+            $(document).ready(function () {
+                /**
+                 * 搜索按钮点击事件
+                 */
+                $("#searchBtn").click(function () {
+                    Search();
+                });
+
+                /**
+                 * 监听Enter键
+                 */
+                $(document).keyup(function (event) {
+                    if (event.keyCode == 13) {
+                        Search();
+                    }
+                });
+            });
+
+            /**
+             * 搜索
+             * @returns {undefined}
+             */
+            function Search()
+            {
+                var keyword = $("#keywowd").val();
+                if (keyword.length < 1)
+                {
+                    return;
+                }
+                $(location).attr('href', "/compare/index.php?kd=" + keyword);
+            }
+
             /**
              * 根据用户反馈比对搜索结果的准确性
              * @param {type} link 链接
@@ -227,20 +310,20 @@
             function CheckLink(link, source, index)
             {
                 var indexBaidu;
-                var indexGoogle;
+                var indexSoso;
                 //确定用户点击链接分别在baidu、google的位置
                 if (source == "baidu")
                 {
                     indexBaidu = index;
                     //当前用户选择的是baidu结果，查看当前链接是否在google结果中
-                    indexGoogle = dataGoogle.href.indexOf(link);
-                    if (indexGoogle == -1)
+                    indexSoso = dataSoso.href.indexOf(link);
+                    if (indexSoso == -1)
                     {
-                        indexGoogle = 999;
+                        indexSoso = 999;
                     }
                 } else
                 {
-                    indexGoogle = index;
+                    indexSoso = index;
                     //当前用户选择的是google结果，查看当前链接是否在百度结果中
                     indexBaidu = dataBaidu.href.indexOf(link);
                     if (indexBaidu == -1)
@@ -249,15 +332,15 @@
                     }
                 }
                 //如果用户选择的连接靠前，更准确即位置越小越准确
-                if (indexBaidu < indexGoogle)
+                if (indexBaidu < indexSoso)
                 {
                     alert("百度的搜索结果更接近用户的需求");
-                } else if (indexBaidu == indexGoogle)
+                } else if (indexBaidu == indexSoso)
                 {
-                    alert("百度、Google的搜索结果都接近用户的需求");
+                    alert("百度、Soso的搜索结果都接近用户的需求");
                 } else
                 {
-                    alert("Google的搜索结果更接近用户的需求");
+                    alert("Soso的搜索结果更接近用户的需求");
                 }
                 //在新窗口打开链接
                 window.open(link);
