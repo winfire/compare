@@ -57,3 +57,11 @@
 参数：keyWord 关键词
 
 返回：分词、链接信息
+
+（5）PickupFromSoso($keyWord)
+
+功能：Soso实时搜索关键词，并从返回的html代码里面获取分词、链接信息
+
+参数：keyWord 关键词
+
+返回：分词、链接信息
